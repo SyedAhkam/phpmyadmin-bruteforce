@@ -34,7 +34,7 @@ struct Args {
 
     /// delay between requests in secs
     #[clap(short, long)]
-    #[clap(default_value = "0")]
+    #[clap(default_value = "2")]
     delay: u64,
 
     /// the user to bruteforce against
@@ -71,7 +71,7 @@ fn pluck_session_value_from_html(html: &str) -> Result<&str> {
 fn pluck_token_value_from_html(html: &str) -> Result<&str> {
     Ok(TOKEN_PLUCK_REGEX
             .captures(html)
-            .ok_or(anyhow!("couldnt pluck session value"))? 
+            .ok_or(anyhow!("couldnt pluck token value"))? 
             .get(1)
             .unwrap()
             .as_str()
