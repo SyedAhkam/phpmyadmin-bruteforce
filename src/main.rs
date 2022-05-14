@@ -34,8 +34,8 @@ struct Args {
 
     /// delay between requests in secs
     #[clap(short, long)]
-    #[clap(default_value = "2")]
-    delay: u64,
+    #[clap(default_value = "0.")]
+    delay: f32,
 
     /// the user to bruteforce against
     #[clap(short, long)]
@@ -170,7 +170,7 @@ fn main() -> Result<()> {
                     false => ()
                 };
             });
-            s.spawn_fifo(move |_| std::thread::sleep(std::time::Duration::from_secs(*delay_cloned)));
+            s.spawn_fifo(move |_| std::thread::sleep(std::time::Duration::from_millis((*delay_cloned * 1000.) as u64)));
         }
     });
 
