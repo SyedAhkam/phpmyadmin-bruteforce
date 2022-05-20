@@ -644,6 +644,7 @@ dependencies = [
  "anyhow",
  "clap",
  "lazy_static",
+ "num_cpus",
  "rayon",
  "regex",
  "reqwest",

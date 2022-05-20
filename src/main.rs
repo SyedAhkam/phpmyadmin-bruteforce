@@ -10,6 +10,8 @@ lazy_static! {
     static ref URL_REGEX: Regex = Regex::new(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+").unwrap();
     static ref SESSION_PLUCK_REGEX: Regex = Regex::new("name=\"set_session\" value=\"(.+?)\"").unwrap();
     static ref TOKEN_PLUCK_REGEX: Regex = Regex::new("name=\"token\" value=\"(.+?)\"").unwrap();
+
+    static ref NUM_CPUS: usize = num_cpus::get();
 }
 
 const MAGIC_AUTH_STRING: &str = "pmaAuth-1";
@@ -30,7 +32,8 @@ struct Args {
 
     /// number of threads to use
     #[clap(short, long)]
-    threads: i32,
+    #[clap(default_value_t = *NUM_CPUS)]
+    threads: usize,
 
     /// delay between requests in secs
     #[clap(short, long)]
