@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use anyhow::{Result, anyhow, Context};
 use serde::Serialize;
+use colored::*;
 
 lazy_static! {
     static ref URL_REGEX: Regex = Regex::new(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+").unwrap();
@@ -87,14 +88,26 @@ fn pluck_token_value_from_html(html: &str) -> Result<&str> {
 }
 
 fn on_success(user: &str, pass: &str, output_filepath: &Path) {
-    println!("[HIT] user={:?}, pass={:?} thread={}", user, pass, rayon::current_thread_index().unwrap());
+    println!(
+        "{} {} {} {}",
+        format!("{}{}{}","[".dimmed(), "HIT".green(), "]".dimmed()),
+        format!("{}{}", "user=".dimmed(), user),
+        format!("{}{}", "pass=".dimmed(), pass),
+        format!("{}{}", "thread=".dimmed(), rayon::current_thread_index().unwrap())
+    );
 
     let mut output_file = File::open(output_filepath).unwrap();
     output_file.write(pass.as_bytes()).context("failed to write to output file").unwrap();
 }
 
 fn on_failure(user: &str, pass: &str) {
-    println!("[FAIL] user={:?}, pass={:?} thread={}", user, pass, rayon::current_thread_index().unwrap());
+    println!(
+        "{} {} {} {}",
+        format!("{}{}{}","[".dimmed(), "FAIL".red(), "]".dimmed()),
+        format!("{}{}", "user=".dimmed(), user),
+        format!("{}{}", "pass=".dimmed(), pass),
+        format!("{}{}", "thread=".dimmed(), rayon::current_thread_index().unwrap())
+    );
 }
 
 fn attempt_login(url: &str, user: &str, output_file: &Path, pass: String, req_client: &reqwest::blocking::Client) -> bool {
